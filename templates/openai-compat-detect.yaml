@@ -1,0 +1,75 @@
+id: openai-compat-detect
+
+info:
+  name: OpenAI-Compatible API Detection
+  author: aimap
+  severity: info
+  description: |
+    Detects OpenAI-compatible API endpoints by probing GET /v1/models
+    and POST /v1/chat/completions.  Many self-hosted LLM inference
+    servers (vLLM, Ollama, LiteLLM, LocalAI, text-generation-inference)
+    expose an OpenAI-compatible API surface.  Unauthenticated access
+    means anyone can query the model.
+  tags: openai,agent,discovery,llm,api
+  reference:
+    - https://platform.openai.com/docs/api-reference
+
+http:
+  # Probe 1: GET /v1/models
+  - method: GET
+    path:
+      - "{{BaseURL}}/v1/models"
+
+    matchers-condition: and
+    matchers:
+      - type: word
+        words:
+          - '"object"'
+          - '"data"'
+        condition: and
+
+      - type: status
+        status:
+          - 200
+
+    extractors:
+      - type: json
+        name: model-list
+        json:
+          - '.data[].id'
+
+  # Probe 2: POST /v1/chat/completions with minimal payload
+  - raw:
+      - |
+        POST /v1/chat/completions HTTP/1.1
+        Host: {{Hostname}}
+        Content-Type: application/json
+
+        {"model":"test","messages":[{"role":"user","content":"hi"}],"max_tokens":1}
+
+    matchers-condition: or
+    matchers:
+      # Successful response
+      - type: word
+        words:
+          - '"choices"'
+          - '"message"'
+        condition: and
+
+      # Error response that still confirms it's an OpenAI-compatible API
+      - type: word
+        words:
+          - '"error"'
+          - '"model"'
+        condition: and
+
+    extractors:
+      - type: json
+        name: model-used
+        json:
+          - '.model'
+
+      - type: json
+        name: error-message
+        json:
+          - '.error.message'

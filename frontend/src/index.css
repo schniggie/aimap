@@ -1,0 +1,102 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 6%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 6%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 210 100% 52%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 18%;
+    --input: 0 0% 18%;
+    --ring: 210 100% 52%;
+  }
+
+  * {
+    @apply border-border;
+    border-radius: 0 !important;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: "Inter", system-ui, sans-serif;
+    margin: 0;
+  }
+
+  code, pre, .font-mono {
+    font-family: "JetBrains Mono", "Fira Code", monospace;
+  }
+}
+
+/* ── Marketing page animations ───────────────────────────────────────── */
+
+@keyframes scanline {
+  0% { transform: translateY(-100%); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateY(100vh); opacity: 0; }
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.8); opacity: 0.6; }
+  100% { transform: scale(3); opacity: 0; }
+}
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes grid-flow {
+  0% { background-position: 0 0; }
+  100% { background-position: 60px 60px; }
+}
+
+@keyframes radar-sweep {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes dash-flow {
+  to { stroke-dashoffset: -16; }
+}
+
+@keyframes node-breathe {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.85; }
+}
+
+@keyframes hero-fade {
+  from { opacity: 0; transform: translateY(20px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes float-card {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes count-glow {
+  0%, 100% { text-shadow: 0 0 20px currentColor; }
+  50% { text-shadow: 0 0 40px currentColor, 0 0 80px currentColor; }
+}
+
+.animate-scanline { animation: scanline 5s linear infinite; }
+.animate-pulse-ring { animation: pulse-ring 2.5s ease-out infinite; }
+.animate-grid-flow { animation: grid-flow 10s linear infinite; }
+.animate-radar-sweep { animation: radar-sweep 4s linear infinite; }
+.animate-dash-flow { animation: dash-flow 0.8s linear infinite; }
+.animate-float-card { animation: float-card 5s ease-in-out infinite; }

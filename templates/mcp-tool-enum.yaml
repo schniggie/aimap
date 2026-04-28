@@ -1,0 +1,79 @@
+id: mcp-tool-enum
+
+info:
+  name: MCP Tool Enumeration
+  author: aimap
+  severity: medium
+  description: |
+    Enumerates tools exposed by an MCP server by sending a tools/list
+    JSON-RPC request.  Exposed tools represent the attack surface of the
+    agent -- tools that perform database queries, send emails, execute
+    code, or access filesystems are especially dangerous when the server
+    has no authentication.
+  tags: mcp,agent,discovery,tools,enumeration
+  reference:
+    - https://modelcontextprotocol.io/docs/spec
+
+http:
+  - raw:
+      - |
+        POST / HTTP/1.1
+        Host: {{Hostname}}
+        Content-Type: application/json
+
+        {"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}
+
+    matchers-condition: and
+    matchers:
+      - type: word
+        words:
+          - "jsonrpc"
+          - "tools"
+        condition: and
+
+      - type: status
+        status:
+          - 200
+
+    extractors:
+      - type: json
+        name: tool-list
+        json:
+          - '.result.tools'
+
+      - type: json
+        name: tool-names
+        json:
+          - '.result.tools[].name'
+
+      - type: json
+        name: tool-count
+        json:
+          - '.result.tools | length'
+
+  # Try /mcp path as well
+  - raw:
+      - |
+        POST /mcp HTTP/1.1
+        Host: {{Hostname}}
+        Content-Type: application/json
+
+        {"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}
+
+    matchers-condition: and
+    matchers:
+      - type: word
+        words:
+          - "jsonrpc"
+          - "tools"
+        condition: and
+
+      - type: status
+        status:
+          - 200
+
+    extractors:
+      - type: json
+        name: tool-list
+        json:
+          - '.result.tools'

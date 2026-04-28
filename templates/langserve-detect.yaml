@@ -1,0 +1,99 @@
+id: langserve-detect
+
+info:
+  name: LangServe Endpoint Detection
+  author: aimap
+  severity: info
+  description: |
+    Detects LangServe deployments by probing for the auto-generated
+    Swagger/FastAPI docs page at /docs and the /invoke endpoint.
+    LangServe exposes LangChain runnables as REST APIs, often with
+    full documentation of the chain's input/output schema.
+  tags: langserve,langchain,agent,discovery,fastapi
+  reference:
+    - https://github.com/langchain-ai/langserve
+
+http:
+  # Probe 1: GET /docs -- Swagger UI (FastAPI auto-docs)
+  - method: GET
+    path:
+      - "{{BaseURL}}/docs"
+
+    matchers-condition: and
+    matchers:
+      - type: word
+        words:
+          - "swagger"
+          - "FastAPI"
+        condition: or
+        part: body
+
+      - type: status
+        status:
+          - 200
+
+    extractors:
+      - type: regex
+        name: api-title
+        regex:
+          - '<title>(.*?)</title>'
+        group: 1
+
+  # Probe 2: POST /invoke with empty body -- LangServe error fingerprint
+  - raw:
+      - |
+        POST /invoke HTTP/1.1
+        Host: {{Hostname}}
+        Content-Type: application/json
+
+        {"input":{}}
+
+    matchers-condition: or
+    matchers:
+      # LangServe success response shape
+      - type: word
+        words:
+          - '"output"'
+
+      # LangServe / FastAPI validation error
+      - type: word
+        words:
+          - '"detail"'
+          - '"validation"'
+        condition: or
+
+      # Pydantic validation error (common in LangServe)
+      - type: word
+        words:
+          - "value_error"
+          - "field required"
+        condition: or
+
+    extractors:
+      - type: json
+        name: output
+        json:
+          - '.output'
+
+  # Probe 3: GET /openapi.json -- full OpenAPI spec
+  - method: GET
+    path:
+      - "{{BaseURL}}/openapi.json"
+
+    matchers-condition: and
+    matchers:
+      - type: word
+        words:
+          - '"openapi"'
+          - '"paths"'
+        condition: and
+
+      - type: status
+        status:
+          - 200
+
+    extractors:
+      - type: json
+        name: api-paths
+        json:
+          - '.paths | keys'

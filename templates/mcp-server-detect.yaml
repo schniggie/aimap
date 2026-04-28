@@ -1,0 +1,93 @@
+id: mcp-server-detect
+
+info:
+  name: MCP Server Detection
+  author: aimap
+  severity: info
+  description: |
+    Detects Model Context Protocol (MCP) servers by sending a JSON-RPC
+    initialize request and matching on the presence of "jsonrpc" and
+    "capabilities" in the response.  MCP servers implement the JSON-RPC 2.0
+    protocol and respond to the initialize method with their capabilities
+    (tools, prompts, resources, etc.).
+  tags: mcp,agent,discovery,jsonrpc
+  reference:
+    - https://modelcontextprotocol.io/docs/spec
+
+http:
+  - raw:
+      - |
+        POST / HTTP/1.1
+        Host: {{Hostname}}
+        Content-Type: application/json
+
+        {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"aimap-scanner","version":"1.0.0"}}}
+
+    matchers-condition: and
+    matchers:
+      - type: word
+        words:
+          - "jsonrpc"
+          - "capabilities"
+        condition: and
+
+      - type: status
+        status:
+          - 200
+
+    extractors:
+      - type: json
+        name: server-name
+        json:
+          - '.result.serverInfo.name'
+
+      - type: json
+        name: protocol-version
+        json:
+          - '.result.protocolVersion'
+
+      - type: json
+        name: capabilities
+        json:
+          - '.result.capabilities'
+
+  # Also try common MCP paths
+  - raw:
+      - |
+        POST /mcp HTTP/1.1
+        Host: {{Hostname}}
+        Content-Type: application/json
+
+        {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"aimap-scanner","version":"1.0.0"}}}
+
+    matchers-condition: and
+    matchers:
+      - type: word
+        words:
+          - "jsonrpc"
+          - "capabilities"
+        condition: and
+
+      - type: status
+        status:
+          - 200
+
+  - raw:
+      - |
+        POST /sse HTTP/1.1
+        Host: {{Hostname}}
+        Content-Type: application/json
+
+        {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"aimap-scanner","version":"1.0.0"}}}
+
+    matchers-condition: and
+    matchers:
+      - type: word
+        words:
+          - "jsonrpc"
+          - "capabilities"
+        condition: and
+
+      - type: status
+        status:
+          - 200
