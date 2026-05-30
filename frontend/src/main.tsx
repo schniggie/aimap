@@ -30,7 +30,7 @@ function ClerkTokenBridge({ children }: { children: React.ReactNode }) {
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <ClerkProvider afterSignOutUrl="/">
+    <ClerkProvider publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY} afterSignOutUrl="/">
       <BrowserRouter>
         <QueryClientProvider client={queryClient}>
           <ClerkTokenBridge>
