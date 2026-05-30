@@ -22,7 +22,6 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { mockScans } from "@/lib/mock-data";
 import { useScans, useQueryPresets } from "@/hooks/useApi";
 import { createScan, updateScanStatus, runScan } from "@/lib/api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -84,7 +83,7 @@ export function Scans() {
   const { data: apiData } = useScans();
   const { data: presetsData } = useQueryPresets();
   const presets = presetsData?.presets ?? [];
-  const scans: Scan[] = apiData?.items?.length ? apiData.items : mockScans;
+  const scans: Scan[] = apiData?.items ?? [];
 
   const activeScans = scans.filter(
     (s) => s.status === "running" || s.status === "paused" || s.status === "queued"
@@ -598,6 +597,13 @@ export function Scans() {
               </TableRow>
             </TableHeader>
             <TableBody>
+              {completedScans.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                    No completed scans yet. Run a scan to see results here.
+                  </TableCell>
+                </TableRow>
+              )}
               {completedScans.map((scan) => (
                 <TableRow key={scan.id}>
                   <TableCell className="font-medium">{scan.name}</TableCell>

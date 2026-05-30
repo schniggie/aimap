@@ -25,7 +25,6 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { mockRanges } from "@/lib/mock-data";
 import { useRanges } from "@/hooks/useApi";
 import { createRange, deleteRange, triggerRangeScan, triggerRangeIngestion } from "@/lib/api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -71,7 +70,7 @@ export function Ranges() {
 
   // API data
   const { data: apiData } = useRanges();
-  const ranges: MonitoredRange[] = apiData?.items?.length ? apiData.items : mockRanges;
+  const ranges: MonitoredRange[] = apiData?.items ?? [];
 
   // Mutations
   const createRangeMutation = useMutation({
@@ -194,6 +193,11 @@ export function Ranges() {
 
       {/* Range cards */}
       <div className="space-y-4">
+        {ranges.length === 0 && (
+          <div className="flex items-center justify-center py-16 text-muted-foreground text-sm">
+            No ranges defined yet. Add a CIDR range to start monitoring.
+          </div>
+        )}
         {ranges.map((range) => (
           <Card key={range.id}>
             <CardHeader className="pb-3">

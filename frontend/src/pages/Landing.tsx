@@ -4,7 +4,6 @@ import { Search, AlertTriangle, ShieldOff, Globe } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { mockStats, mockEndpoints } from "@/lib/mock-data";
 import { useStats, useEndpoints, useGlobeData } from "@/hooks/useApi";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { GlobeVisualization, GlobeLegend } from "@/components/GlobeVisualization";
@@ -54,21 +53,13 @@ export function Landing() {
   const { data: recentData } = useEndpoints({ page: 1, page_size: 5, sort_by: "-first_seen" });
   const { data: globePoints } = useGlobeData();
 
-  // Derive display values — show N/A when real data hasn't been computed yet
-  const hasApiStats = !!apiStats;
-  const totalEndpoints = apiStats?.total ?? mockStats.total_endpoints;
-  const criticalCount = hasApiStats
-    ? (apiStats.by_risk?.critical != null ? apiStats.by_risk.critical : null)
-    : mockStats.critical_count;
-  const noAuthPercent = hasApiStats
-    ? (apiStats.no_auth_count > 0 && apiStats.total > 0
-        ? ((apiStats.no_auth_count / apiStats.total) * 100).toFixed(1)
-        : null)
-    : mockStats.no_auth_percent;
+  const totalEndpoints = apiStats?.total ?? 0;
+  const criticalCount = apiStats?.by_risk?.critical ?? null;
+  const noAuthPercent = apiStats && apiStats.no_auth_count > 0 && apiStats.total > 0
+    ? ((apiStats.no_auth_count / apiStats.total) * 100).toFixed(1)
+    : null;
 
-  const byProtocol = apiStats?.by_protocol && Object.keys(apiStats.by_protocol).length > 0
-    ? apiStats.by_protocol
-    : mockStats.by_protocol;
+  const byProtocol = apiStats?.by_protocol ?? {};
 
   const protocolTotal = Object.values(byProtocol).reduce((a, b) => a + b, 0);
   const protocolData = useMemo(
@@ -81,7 +72,7 @@ export function Landing() {
     [byProtocol, protocolTotal]
   );
 
-  const recent = recentData?.items?.length ? recentData.items : mockEndpoints.slice(0, 5);
+  const recent = recentData?.items ?? [];
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -165,6 +156,11 @@ export function Landing() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-1 pt-0">
+            {recent.length === 0 && (
+              <p className="text-sm text-muted-foreground italic py-4 px-3">
+                No endpoints discovered yet. Run a scan to populate this list.
+              </p>
+            )}
             {recent.map((ep) => (
               <Link
                 key={ep.id}

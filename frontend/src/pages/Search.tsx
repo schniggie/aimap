@@ -5,7 +5,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Pagination } from "@/components/ui/pagination";
-import { mockEndpoints } from "@/lib/mock-data";
 import { useSearchEndpoints } from "@/hooks/useApi";
 import type { AgentEndpoint, RiskLevel } from "@/types";
 
@@ -53,20 +52,8 @@ export function SearchPage() {
   // API call
   const { data: searchData } = useSearchEndpoints(initialQuery, currentPage, PER_PAGE);
 
-  // Mock-based fallback filtering
-  const mockFiltered = mockEndpoints.filter((ep) => {
-    if (!initialQuery) return true;
-    const q = initialQuery.toLowerCase();
-    const searchable = `${ep.ip} ${ep.port} ${ep.hostname} ${ep.protocol} ${ep.auth_status} ${ep.tools.map((t) => t.name).join(" ")} ${ep.system_prompt} ${ep.geo.country} ${ep.geo.org} ${ep.tags.join(" ")}`.toLowerCase();
-    return searchable.includes(q);
-  });
-
-  // Decide data source
-  const useApi = !!(searchData?.items && searchData.items.length > 0);
-  const results: AgentEndpoint[] = useApi
-    ? searchData!.items
-    : mockFiltered.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
-  const totalResults = useApi ? searchData!.total : mockFiltered.length;
+  const results: AgentEndpoint[] = searchData?.items ?? [];
+  const totalResults = searchData?.total ?? 0;
   const totalPages = Math.ceil(totalResults / PER_PAGE);
 
   const handleSearch = (e: React.FormEvent) => {
@@ -105,6 +92,11 @@ export function SearchPage() {
 
       {/* Results */}
       <div className="space-y-3">
+        {results.length === 0 && initialQuery && (
+          <p className="text-sm text-muted-foreground italic py-4">
+            No results for "{initialQuery}". Run a scan to discover endpoints.
+          </p>
+        )}
         {results.map((ep) => (
           <Link key={ep.id} to={`/agent/${ep.id}`} className="block">
             <Card className="hover:border-primary/50 transition-colors">

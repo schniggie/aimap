@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/table";
 import { Pagination } from "@/components/ui/pagination";
 import { Separator } from "@/components/ui/separator";
-import { mockEndpoints } from "@/lib/mock-data";
 import { useEndpoints, useGlobeData } from "@/hooks/useApi";
 import { GlobeVisualization, GlobeLegend } from "@/components/GlobeVisualization";
 import type { AgentEndpoint, RiskLevel } from "@/types";
@@ -104,42 +103,13 @@ export function Explore() {
   const { data: apiData } = useEndpoints(apiParams);
   const { data: globePoints } = useGlobeData();
 
-  // Mock-based fallback
-  const mockFiltered = useMemo(() => {
-    return mockEndpoints.filter((ep) => {
-      if (protocolFilter && ep.protocol !== protocolFilter) return false;
-      if (authFilter && ep.auth_status !== authFilter) return false;
-      if (portFilter && String(ep.port) !== portFilter) return false;
-      if (countryFilter && ep.geo.country_code !== countryFilter) return false;
-      if (riskFilter) {
-        const r = riskBadgeVariant(ep.risk_score);
-        if (r !== riskFilter) return false;
-      }
-      return true;
-    });
-  }, [protocolFilter, authFilter, portFilter, countryFilter, riskFilter]);
-
-  // Decide data source
-  const useApi = !!(apiData?.items && apiData.items.length > 0);
-
-  // If API has data, use it; otherwise use mock + client-side port filter
-  let displayItems: AgentEndpoint[];
-  let totalItems: number;
-
-  if (useApi) {
-    // Port filter is not a backend param, so apply client-side if needed
-    const items = portFilter
-      ? apiData!.items.filter((ep) => String(ep.port) === portFilter)
-      : apiData!.items;
-    displayItems = items;
-    totalItems = portFilter ? items.length : apiData!.total;
-  } else {
-    displayItems = mockFiltered.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
-    totalItems = mockFiltered.length;
-  }
-
+  const rawItems = apiData?.items ?? [];
+  const displayItems: AgentEndpoint[] = portFilter
+    ? rawItems.filter((ep) => String(ep.port) === portFilter)
+    : rawItems;
+  const totalItems = portFilter ? displayItems.length : (apiData?.total ?? 0);
   const totalPages = Math.ceil(totalItems / PER_PAGE);
-  const facets = computeFacets(useApi ? apiData!.items : mockFiltered);
+  const facets = computeFacets(rawItems);
 
   return (
     <div className="px-6 py-6 space-y-6">
@@ -215,6 +185,13 @@ export function Explore() {
             </TableRow>
           </TableHeader>
           <TableBody>
+            {displayItems.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                  No endpoints found. Run a scan to populate the database.
+                </TableCell>
+              </TableRow>
+            )}
             {displayItems.map((ep) => (
               <TableRow key={ep.id}>
                 <TableCell>
@@ -253,8 +230,9 @@ export function Explore() {
       {/* Showing X of Y */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          Showing {((currentPage - 1) * PER_PAGE) + 1}
-          -{Math.min(currentPage * PER_PAGE, totalItems)} of {totalItems}
+          {totalItems > 0
+            ? `Showing ${(currentPage - 1) * PER_PAGE + 1}–${Math.min(currentPage * PER_PAGE, totalItems)} of ${totalItems}`
+            : "No results"}
         </p>
         {totalPages > 1 && (
           <Pagination

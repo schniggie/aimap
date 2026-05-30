@@ -15,7 +15,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { mockEndpoints, mockAnalysis } from "@/lib/mock-data";
 import { useEndpointById, useAnalysis } from "@/hooks/useApi";
 import type { RiskLevel } from "@/types";
 
@@ -42,9 +41,23 @@ export function AgentDetail() {
   const { data: apiEndpoint } = useEndpointById(id);
   const { data: apiAnalysis } = useAnalysis(id);
 
-  // Fallback to mock data
-  const endpoint = apiEndpoint ?? mockEndpoints.find((ep) => ep.id === id) ?? mockEndpoints[0];
-  const analysis = apiAnalysis ?? (endpoint.id === "ep_001" ? mockAnalysis : null);
+  const endpoint = apiEndpoint ?? null;
+  const analysis = apiAnalysis ?? null;
+
+  if (!endpoint) {
+    return (
+      <div className="px-6 py-6 space-y-4">
+        <Link
+          to="/explore"
+          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to results
+        </Link>
+        <p className="text-muted-foreground text-sm">Endpoint not found.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="px-6 py-6 space-y-6">
