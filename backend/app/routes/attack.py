@@ -19,7 +19,7 @@ from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisco
 from pydantic import BaseModel, Field
 from starlette.requests import Request
 
-from app.auth import get_current_user, _get_jwks_client
+from app.auth import get_current_user
 from app.config import settings
 from app.database import get_database
 from app.limiter import limiter
@@ -211,26 +211,15 @@ async def start_attack(request: Request, endpoint_id: str, body: AttackRequest, 
 
 
 @router.websocket("/{attack_id}/stream")
-async def attack_stream(websocket: WebSocket, attack_id: str, token: str | None = None) -> None:
+async def attack_stream(websocket: WebSocket, attack_id: str) -> None:
     """Stream live attack log entries over WebSocket.
 
     Uses Redis Streams (XREAD) when available, falling back to
     in-memory buffer polling for local dev.
-    """
-    # Authenticate via token query parameter (skip in local dev mode)
-    if settings.CLERK_ISSUER:
-        if not token:
-            await websocket.close(code=1008, reason="Authentication required")
-            return
-        client = _get_jwks_client()
-        try:
-            import jwt as _jwt
-            signing_key = client.get_signing_key_from_jwt(token)
-            _jwt.decode(token, signing_key.key, algorithms=["RS256"], issuer=settings.CLERK_ISSUER)
-        except Exception:
-            await websocket.close(code=1008, reason="Invalid token")
-            return
 
+    Auth: attack_id is a 48-bit random token issued by an authenticated POST,
+    so possession implies authorization.
+    """
     await websocket.accept()
 
     if not await _is_attack_known(attack_id):

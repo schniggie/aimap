@@ -11,7 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSock
 from pydantic import BaseModel
 from starlette.requests import Request
 
-from app.auth import get_current_user, _get_jwks_client
+from app.auth import get_current_user
 from app.config import settings
 from app.database import get_database
 from app.limiter import limiter
@@ -339,25 +339,12 @@ async def _execute_scan(scan_id: str, scan_doc: dict) -> None:
 # ---------------------------------------------------------------------------
 
 @router.websocket("/{scan_id}/progress")
-async def scan_progress_ws(websocket: WebSocket, scan_id: str, token: str | None = None) -> None:
+async def scan_progress_ws(websocket: WebSocket, scan_id: str) -> None:
     """Stream scan progress updates over WebSocket.
 
     Polls the scan document every 2 seconds and pushes updates.
+    Auth: scan_id is a random token issued by an authenticated POST.
     """
-    # Authenticate via token query parameter (skip in local dev mode)
-    if settings.CLERK_ISSUER:
-        if not token:
-            await websocket.close(code=1008, reason="Authentication required")
-            return
-        client = _get_jwks_client()
-        try:
-            import jwt as _jwt
-            signing_key = client.get_signing_key_from_jwt(token)
-            _jwt.decode(token, signing_key.key, algorithms=["RS256"], issuer=settings.CLERK_ISSUER)
-        except Exception:
-            await websocket.close(code=1008, reason="Invalid token")
-            return
-
     await websocket.accept()
     db = get_database()
     collection = db["scans"]
