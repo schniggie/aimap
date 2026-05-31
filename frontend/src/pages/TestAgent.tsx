@@ -9,6 +9,7 @@ import { Select } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useEndpointById } from "@/hooks/useApi";
 import { startAttack, streamAttackLogs } from "@/lib/api";
+import { getAuthToken } from "@/lib/auth";
 import type { AttackLogEntry, RiskLevel } from "@/types";
 
 const MCP_TECHNIQUES: Record<string, boolean> = {
@@ -107,9 +108,11 @@ export function TestAgent() {
         max_steps: parseInt(maxSteps, 10) || 20,
       });
 
-      // Connect WebSocket to stream results
+      // Connect WebSocket to stream results (pass token for WS auth)
+      const token = await getAuthToken();
       const cleanup = streamAttackLogs(
         result.attack_id,
+        token,
         (entry) => {
           setLogEntries((prev) => [...prev, entry]);
         },

@@ -239,12 +239,14 @@ export function startAttack(
  */
 export function streamAttackLogs(
   attackId: string,
+  token: string | null,
   onEntry: (entry: import("@/types").AttackLogEntry) => void,
   onDone: () => void,
   onError?: (err: Event) => void,
 ): () => void {
   const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
-  const wsUrl = `${proto}//${window.location.host}/api/attack/${attackId}/stream`;
+  const qs = token ? `?token=${encodeURIComponent(token)}` : "";
+  const wsUrl = `${proto}//${window.location.host}/api/attack/${attackId}/stream${qs}`;
   const ws = new WebSocket(wsUrl);
 
   ws.onmessage = (event) => {
