@@ -26,6 +26,7 @@ from app.limiter import limiter
 from app.services.attack_mcp import MCPAttackEngine
 from app.services.attack_ollama import OllamaAttackEngine
 from app.services.attack_openclaw import OpenClawAttackEngine
+from app.services.attack_openai import OpenAIAttackEngine
 from app.services.concurrency import acquire_slot, release_slot
 from app.services.redis_client import get_redis
 
@@ -376,8 +377,10 @@ async def _run_attack(
             engine = OllamaAttackEngine(**engine_kwargs)
         elif protocol == "openclaw":
             engine = OpenClawAttackEngine(**engine_kwargs)
+        elif protocol in ("openai_compat", "gradio", "streamlit", "open_webui", "librechat"):
+            engine = OpenAIAttackEngine(**engine_kwargs)
         else:
-            # Default to MCP for mcp, langserve, and unknown protocols
+            # MCP, LangServe, AutoGen, and unknown — use MCP engine
             engine = MCPAttackEngine(**engine_kwargs)
 
         async for entry in engine.run():
