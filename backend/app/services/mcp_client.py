@@ -137,6 +137,8 @@ class MCPClient:
             data = resp.json()
             if "error" in data:
                 err = data["error"]
+                if not isinstance(err, dict):
+                    raise MCPClientError(f"JSON-RPC error: {err}")
                 raise MCPClientError(
                     f"JSON-RPC error {err.get('code')}: {err.get('message')}"
                 )

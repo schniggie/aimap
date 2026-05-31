@@ -67,7 +67,7 @@ app.include_router(endpoints.router, prefix="/api", dependencies=_auth)
 app.include_router(scans.router, prefix="/api", dependencies=_auth)
 app.include_router(ranges.router, prefix="/api", dependencies=_auth)
 app.include_router(analyses.router, prefix="/api", dependencies=_auth)
-app.include_router(attack.router, prefix="/api", dependencies=_auth)
+app.include_router(attack.router, prefix="/api")  # auth handled per-route; WS can't use headers
 
 
 # ---------------------------------------------------------------------------
