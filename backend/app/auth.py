@@ -8,7 +8,8 @@ import logging
 
 import jwt
 from jwt import PyJWKClient
-from fastapi import HTTPException, Request
+from fastapi import HTTPException
+from starlette.requests import HTTPConnection
 
 from app.config import settings
 
@@ -27,16 +28,21 @@ def _get_jwks_client() -> PyJWKClient | None:
     return _jwks_client
 
 
-async def get_current_user(request: Request) -> dict:
+async def get_current_user(conn: HTTPConnection) -> dict:
     """Require authentication and return user info from the Clerk JWT.
 
+    Works for both HTTP requests (Authorization header) and WebSocket
+    connections (token query param or Authorization header).
     When CLERK_ISSUER is not set, returns an anonymous user so local dev
     works without Clerk configuration.
     """
     if not settings.CLERK_ISSUER:
         return {"user_id": "local", "email": None}
 
-    auth_header = request.headers.get("Authorization", "")
+    auth_header = conn.headers.get("Authorization", "")
+    # WebSocket clients can't set headers easily — accept token query param too
+    if not auth_header.startswith("Bearer ") and "token" in conn.query_params:
+        auth_header = f"Bearer {conn.query_params['token']}"
     if not auth_header.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Authentication required")
 
@@ -69,9 +75,9 @@ async def get_current_user(request: Request) -> dict:
         raise HTTPException(status_code=401, detail="Invalid token")
 
 
-async def get_optional_user(request: Request) -> dict | None:
+async def get_optional_user(conn: HTTPConnection) -> dict | None:
     """Extract user if authenticated, return None otherwise."""
     try:
-        return await get_current_user(request)
+        return await get_current_user(conn)
     except HTTPException:
         return None
